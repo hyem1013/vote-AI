@@ -1,0 +1,14 @@
+# data
+data/
+*.csv
+*.parquet
+
+# notebook
+.ipynb_checkpoints/
+
+# python
+__pycache__/
+*.pyc
+
+# mac
+.DS_Store
