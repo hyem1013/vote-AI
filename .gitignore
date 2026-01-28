@@ -3,6 +3,7 @@
 /notebooks/*/submissions/
 *.csv
 *.parquet
+*.npy
 
 # notebook
 .ipynb_checkpoints/
