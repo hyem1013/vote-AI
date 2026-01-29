@@ -92,7 +92,7 @@
 
 ---
 
-## 🏁 Experiment 04: Feature Selection & Analysis via AutoML (PyCaret)
+## Experiment 04: Feature Selection & Analysis via AutoML (PyCaret)
 - **Date:** 2026-01-29
 - **Model:** CatBoost (Best for Feature Importance Analysis)
 - **Status:** Completed (Selected 100+ Features)
@@ -113,6 +113,7 @@
 - **TabNet:** TabNet을 통하여 MLP > FT-Transformer - TabNet 순으로 동일 피처에 대한 각 모델의 성능을 대략적으로 체크 이후 AutoML로 선별된 정예 피처셋을 적용하여 불필요한 노이즈를 제거한 모델 학습 진행.
 - **DCN(Deep & Cross Network):** 피처 간 상호작용(Feature Interaction)을 명시적으로 학습하는 구조 도입 검토.
 
+<details> <summary> 사용 피처 목록(FEATURES_TO_USE) 전체 보기 (클릭)</summary>
 FEATURES_TO_USE = [
     # 인구통계 및 환경
     'education', 'age_group', 'race', 'married', 'familysize', 'engnat', 'gender', 'religion', 'urban',
@@ -124,3 +125,4 @@ FEATURES_TO_USE = [
     # 질문 답변 (상위권 위주)
     'QcA', 'QrA', 'QqA', 'QpA', 'QeA', 'QdA', 'QtA', 'QjA', 'QfA', 'QhA'
 ]
+</details>
