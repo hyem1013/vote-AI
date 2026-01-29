@@ -114,6 +114,7 @@
 - **DCN(Deep & Cross Network):** 피처 간 상호작용(Feature Interaction)을 명시적으로 학습하는 구조 도입 검토.
 
 <details> <summary> 사용 피처 목록(FEATURES_TO_USE) 전체 보기 (클릭)</summary>
+```python
 FEATURES_TO_USE = [
     # 인구통계 및 환경
     'education', 'age_group', 'race', 'married', 'familysize', 'engnat', 'gender', 'religion', 'urban',
@@ -125,4 +126,5 @@ FEATURES_TO_USE = [
     # 질문 답변 (상위권 위주)
     'QcA', 'QrA', 'QqA', 'QpA', 'QeA', 'QdA', 'QtA', 'QjA', 'QfA', 'QhA'
 ]
+```
 </details>
