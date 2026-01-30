@@ -1,0 +1,2 @@
+Best AUC: 0.76798
+Best params: {'n_layers': 2, 'hidden_0': 512, 'hidden_1': 384, 'dropout': 0.5, 'lr': 0.0007872420276588523, 'weight_decay': 0.0008829299910088367, 'batch_size': 256}

@@ -1,0 +1,51 @@
+# 파일명 변경 매핑 (구 → 신)
+
+- 01_MLP_v1_baseline.ipynb (구: 02_first_test.ipynb) → 01_MLP_v1_baseline.ipynb
+- 01_MLP_v1_baseline.ipynb (구: 02_1st_test.ipynb) → 01_MLP_v1_baseline.ipynb
+- 02_FTTransformer_v1_optuna.ipynb (구: 03_second_test.ipynb) → 02_FTTransformer_v1_optuna.ipynb
+- 02_FTTransformer_v1_optuna.ipynb (구: 03_2nd_test.ipynb) → 02_FTTransformer_v1_optuna.ipynb
+- 03_FTTransformer_v2_kfold.ipynb (구: 04_third_test.ipynb) → 03_FTTransformer_v2_kfold.ipynb
+- 03_FTTransformer_v2_kfold.ipynb (구: 04_3rd_test.ipynb) → 03_FTTransformer_v2_kfold.ipynb
+- 04_FTTransformer_v3_seed_ensemble.ipynb (구: 05_third_test(seedensemble).ipynb) → 04_FTTransformer_v3_seed_ensemble.ipynb
+- 04_FTTransformer_v3_seed_ensemble.ipynb (구: 05_3rd_test(seedensemble).ipynb) → 04_FTTransformer_v3_seed_ensemble.ipynb
+- 05_FTTransformer_v4_gemini_feats.ipynb (구: 06_4th_test.ipynb) → 05_FTTransformer_v4_gemini_feats.ipynb
+- 06_FTTransformer_v5_optuna_full.ipynb (구: 07_5th_test.ipynb) → 06_FTTransformer_v5_optuna_full.ipynb
+- 07_FTTransformer_v6_optuna_min.ipynb (구: 08_6th_test.ipynb) → 07_FTTransformer_v6_optuna_min.ipynb
+- 08_FTTransformer_v7_optuna_mid.ipynb (구: 09_7th_test.ipynb) → 08_FTTransformer_v7_optuna_mid.ipynb
+- 09_Ensemble_MLP_FT_v1.ipynb (구: 15-1_test(FTtransformer).ipynb) → 09_Ensemble_MLP_FT_v1.ipynb
+- 10_MLP_v2_te.ipynb (구: 15_new_5th_test.ipynb) → 10_MLP_v2_te.ipynb
+- 11_MLP_v3_te_quantile.ipynb (구: 16_new_6th_test.ipynb) → 11_MLP_v3_te_quantile.ipynb
+- 12_FTTransformer_v8_rawcenter.ipynb (구: 17_new2_test.ipynb) → 12_FTTransformer_v8_rawcenter.ipynb
+- 13_FTTransformer_v9_full.ipynb (구: 18_new2_test.ipynb) → 13_FTTransformer_v9_full.ipynb
+- 14_Ensemble_FT_MLP_v2.ipynb (구: 19_new3_test.ipynb) → 14_Ensemble_FT_MLP_v2.ipynb
+- 15_MLP_v4_new3.ipynb (구: 20_new3_test.ipynb) → 15_MLP_v4_new3.ipynb
+- 16_v5_ResMLP_v1.ipynb (구: 21_v5_test.ipynb) → 16_v5_ResMLP_v1.ipynb
+- 17_v5_FTLight_v1.ipynb (구: 22_v5_test.ipynb) → 17_v5_FTLight_v1.ipynb
+- 18_v5_empty.ipynb (구: 23_v5_test.ipynb) → 18_v5_empty.ipynb
+- 19_v5_empty2.ipynb (구: 24_v5_test.ipynb) → 19_v5_empty2.ipynb
+
+- submission_01_MLP_v1_baseline.csv → submission_01_MLP_v1_baseline.csv
+- submission_02_FTTransformer_v1_optuna.csv → submission_02_FTTransformer_v1_optuna.csv
+- submission_03_FTTransformer_v2_kfold.csv → submission_03_FTTransformer_v2_kfold.csv
+- submission_04_FTTransformer_v3_seed_ensemble.csv → submission_04_FTTransformer_v3_seed_ensemble.csv
+- submission_04_FTTransformer_v3_seed_ensemble.csv → submission_04_FTTransformer_v3_seed_ensemble.csv
+- submission_05_FTTransformer_v4_gemini_feats.csv → submission_05_FTTransformer_v4_gemini_feats.csv
+- submission_06_FTTransformer_v5_optuna_full.csv → submission_06_FTTransformer_v5_optuna_full.csv
+- submission_07_FTTransformer_v6_optuna_min.csv → submission_07_FTTransformer_v6_optuna_min.csv
+- submission_08_FTTransformer_v7_optuna_mid.csv → submission_08_FTTransformer_v7_optuna_mid.csv
+- submission_09_Ensemble_MLP_FT_v1.csv → submission_09_Ensemble_MLP_FT_v1.csv
+- submission_09_Ensemble_MLP_FT_v1_ensemble.csv → submission_09_Ensemble_MLP_FT_v1_ensemble.csv
+- submission_09_Ensemble_MLP_FT_v1_mlp.csv → submission_09_Ensemble_MLP_FT_v1_mlp.csv
+- submission_09_Ensemble_MLP_FT_v1_ft.csv → submission_09_Ensemble_MLP_FT_v1_ft.csv
+- submission_10_MLP_v2_te.csv → submission_10_MLP_v2_te.csv
+- submission_10_MLP_v2_te.csv → submission_10_MLP_v2_te.csv
+- submission_11_MLP_v3_te_quantile.csv → submission_11_MLP_v3_te_quantile.csv
+- submission_11_MLP_v3_te_quantile.csv → submission_11_MLP_v3_te_quantile.csv
+- submission_12_FTTransformer_v8_rawcenter.csv → submission_12_FTTransformer_v8_rawcenter.csv
+- submission_12_FTTransformer_v8_rawcenter.csv → submission_12_FTTransformer_v8_rawcenter.csv
+- submission_13_FTTransformer_v9_full.csv → submission_13_FTTransformer_v9_full.csv
+- submission_13_FTTransformer_v9_full.csv → submission_13_FTTransformer_v9_full.csv
+- submission_14_Ensemble_FT_MLP_v2.csv → submission_14_Ensemble_FT_MLP_v2.csv
+- submission_15_MLP_v4_new3.csv → submission_15_MLP_v4_new3.csv
+- submission_16_v5_ResMLP_v1.csv → submission_16_v5_ResMLP_v1.csv
+- submission_17_v5_FTLight_v1.csv → submission_17_v5_FTLight_v1.csv
