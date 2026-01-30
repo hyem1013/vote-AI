@@ -72,7 +72,7 @@ AUC: 0.7638 (seed 42, 202, 777 mean)
 - 피처: v4 기반 피처 + FT-Transformer용 전처리
 - 라벨: voted==2 -> 1 (class2 양성)
 - AUC: OOF AUC: 0.77078 - LB 0.778 (해커톤 제출 완료)
-- 제출파일: submission_blend.csv
+- 제출파일: submission_ensemble.csv
 
 
 
