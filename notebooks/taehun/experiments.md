@@ -128,3 +128,36 @@ FEATURES_TO_USE = [
 ]
 ```
 </details>
+
+---
+
+## Experiment 04: AutoGluon Multi-modal Ensemble (MLP + FT-Transformer)
+- **Date:** 2026-01-30
+- **Model:** AutoGluon (TabularPredictor)
+- **Status:** ❌ FAILED (Kernel Crash / Memory Out)
+
+### 1. 시도 내용 (Intended Strategy)
+- **목표:** 단일 FT-Transformer의 성능 한계를 넘기 위해 AutoGluon을 활용한 MLP 및 Transformer 모델 앙상블 시도.
+- **설정:** `presets='best_quality'`, `hyperparameters={'NN_TORCH': {}, 'FT_TRANSFORMER': {}}` 적용.
+
+### 2. 발생 문제 (Issue Diagnosis)
+- **증상:** 학습 진행 중 커널 연결 끊김(Dead Kernel) 및 시스템 프리징 발생.
+- **원인 분석:** 1. **메모리 부족 (OOM):** AutoGluon의 `best_quality` 설정은 5-Fold 이상 스태킹을 기본으로 하므로, M1 Pro의 통합 메모리(Unified Memory) 한계를 초과함.
+    2. **장치 충돌:** AutoGluon 내부의 Ray/Dask 병렬 처리 프로세스가 PyTorch MPS(Metal) 가속과 충돌했을 가능성.
+
+### 3. 향후 계획 (Next Steps / Pivot)
+- **경량화 시도:** `presets='high_quality'` 또는 `medium_quality`로 낮추어 스태킹 깊이 제한.
+- **수동 앙상블:** AutoGluon에 의존하지 않고, 이미 학습 완료된 **Exp 02(MLP)**와 **Exp 03(FT-Transformer)**의 가중 평균(Soft Voting)을 코드로 직접 구현하여 메모리 부하 최소화.
+
+---
+
+## Experiment 05: AutoGluon Multi-modal Ensemble (MLP + FT-Transformer)
+- **Date:** 2026-01-30
+- **Model:** AutoGluon (TabularPredictor)
+- **Status:** ❌ FAILED (Kernel Crash / Memory Out)
+
+### 1. 발생 문제 (Issue Diagnosis)
+- **증상:** 학습 진행 중 커널 연결 끊김(Dead Kernel) 및 시스템 프리징 발생.
+- **원인 분석:** 1. **메모리 부족 (OOM):** AutoGluon의 `best_quality` 설정은 5-Fold 이상 스태킹을 기본으로 하므로, M1 Pro의 통합 메모리(Unified Memory) 한계를 초과함.
+    2. **장치 충돌:** AutoGluon 내부의 Ray/Dask 병렬 처리 프로세스가 PyTorch MPS(Metal) 가속과 충돌했을 가능성.
+    3. 04와 동일.
