@@ -5,6 +5,8 @@
 *.parquet
 *.npy
 
+/notebooks/hyemin/models/
+
 # notebook
 .ipynb_checkpoints/
 
