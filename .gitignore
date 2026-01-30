@@ -3,12 +3,16 @@
 /notebooks/*/submissions/
 *.csv
 *.parquet
-*.npy
+
 
 /notebooks/hyemin/models/
 
 # notebook
 .ipynb_checkpoints/
+
+# npy
+/notebooks/hyemin/*.npy
+
 
 # python
 __pycache__/

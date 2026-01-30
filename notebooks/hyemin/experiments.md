@@ -23,6 +23,8 @@
 - 제출파일: submission_prob_class2.csv
 - 메모: 02_first_test 기준 파이프라인 적용
 
+
+
 [2026-01-28 14:36] - 03_second_test.ipynb
 - 모델: FT-Transformer + Optuna(03_second_test)
 - 피처: 02 기반 + cred_bin, hand/married 원본 카테고리
@@ -30,6 +32,8 @@
 - AUC: 0.7707
 - 제출파일: submission_prob_second_test.csv (아직 해커톤에 제출 X)
 - 메모: 제출 전, best params 적용 결과 기록
+
+
 
 [2026-01-28 14:45] - 04_third_test.ipynb
 - 모델: FT-Transformer (04_third_test, 기본 파라미터)
@@ -39,6 +43,9 @@
 - 제출파일: submission_prob_third_test.csv (아직 해커톤에 제출 X)
 - 메모: KFold 평균 결과 기록
 
+
+
+
 [2026-01-28 16:18] - 05_third_test(seedensemble).ipynb
 모델: FT-Transformer (05_seed_ensemble_test, seed 앙상블)
 피처: 04_third_test와 동일 (missing indicator/qa_missing_ratio 포함)
@@ -46,3 +53,41 @@
 AUC: 0.7638 (seed 42, 202, 777 mean)
 제출파일: submission_prob_third_test(seed_ensemble).csv (아직 해커톤에 제출 X)
 메모: SEEDS=[42,202,777] 앙상블, seed별 test_probs 저장 후 평균
+
+
+---------- 여기서부터 새롭게 feature engineering ----------
+
+[2026-01-29 17:19] - 15_new_5th_test.ipynb
+- 모델: SimpleMLPWithEmbedding + Target Encoding + 5-Fold
+- 피처: 원본 Q_A/Q_E log/WR/WF + 다수 파생(인구통계 flags, QA/QE 집계, TP Big5, vocab, interaction)
+- 범주형: gender/race/religion
+- 라벨: voted==2 -> 1 (class2 양성)
+- 결과: 코드 내 OOF 0.767 - LB 0.775
+- 제출파일: submission_15_new_5th_test.csv (해커톤 제출 완료)
+
+
+
+[2026-01-30 10:00] - 15-1_test(FTtransformer).ipynb
+- 모델: MLP + FT-Transformer 앙상블 (예측 평균)
+- 피처: v4 기반 피처 + FT-Transformer용 전처리
+- 라벨: voted==2 -> 1 (class2 양성)
+- AUC: OOF AUC: 0.77078 - LB 0.778 (해커톤 제출 완료)
+- 제출파일: submission_blend.csv
+
+
+
+[2026-01-30 10:00] - 17_new2_test.ipynb
+- 모델: FT-Transformer + 5-Fold (seed=42)
+- 피처: 기존 FE + raw center 버전 (코드 내 run_name=ft_rawcenter)
+- 라벨: voted==2 -> 1 (class2 양성)
+- AUC: oof 0.76594 (해커톤 제출 X)
+- 제출파일: submission_ft_rawcenter_seed42.csv
+
+
+
+[2026-01-30 10:00] - 18_new2_test.ipynb
+- 모델: FT-Transformer + 5-Fold (seed=42)
+- 피처: FEATURE_SET=full
+- 라벨: voted==2 -> 1 (class2 양성)
+- AUC: oof 0.75926 (해커톤 제출 X)
+- 제출파일: submission_ft_full_seed42.csv
