@@ -161,3 +161,198 @@ FEATURES_TO_USE = [
 - **원인 분석:** 1. **메모리 부족 (OOM):** AutoGluon의 `best_quality` 설정은 5-Fold 이상 스태킹을 기본으로 하므로, M1 Pro의 통합 메모리(Unified Memory) 한계를 초과함.
     2. **장치 충돌:** AutoGluon 내부의 Ray/Dask 병렬 처리 프로세스가 PyTorch MPS(Metal) 가속과 충돌했을 가능성.
     3. 04와 동일.
+
+---
+
+### Experiment 06: ResNet-style Deep MLP 시도
+파일: 05_ResNet-style Deep MLP_v1.ipynb
+결과: 실패 (AUC 0.7662)
+
+원인: > 
+1. 모델의 깊이 증가로 인한 과적합 발생 및 데이터 스케일링 부재. 
+2. LayerNorm보다 기존의 수동 Feature Scaling이 본 데이터셋의 척도(1-5점)에 더 적합함 확인.
+
+Action Item: 모델 구조를 단순화하고 성공했던 수동 스케일링 로직으로 회귀.
+
+---
+
+### Experiment 07: Wide MLP with BatchNorm & Manual Scaling
+Date: 2026-01-31
+Model: Wide MLP (91 → 512 → 128 → 1)
+Status: Completed (Performance Recovered)
+
+1. 시도 내용 (Intended Strategy)
+모델 구조 변경: 너무 깊었던 ResNet 구조를 버리고, 층의 너비를 넓힌(512 node) Wide MLP 구조 채택.
+정규화 층 도입: BatchNorm1d를 추가하여 내부 공변량 변화를 제어하고 학습 속도 및 안정성 개선.
+로직 복구: Experiment 06에서 실패 원인이었던 스케일링을 성공 사례였던 '수동 스케일링' 및 2. - sigmoid 로직으로 원복.
+검증 체계 강화: roc_auc_score를 도입하여 매 폴드/에포크마다 실시간 AUC 모니터링 수행.
+
+2. 결과 분석 (Result Analysis)
+Validation AUC: 0.77123 (+/- 0.00529)
+
+분석: 1. 구조적 적합성: 본 데이터셋에는 복잡한 잔차 연결(ResNet)보다 적당한 깊이와 넓은 너비를 가진 MLP가 더 강건(Robust)하게 작동함을 확인. 2. 스케일링의 중요성: LayerNorm 단독 사용보다 도메인 지식이 반영된 수동 스케일링이 AUC 확보에 필수적임. 3. 성능 회복: Experiment 05(0.7662) 대비 약 +0.005 포인트 반등 성공.
+
+3. 향후 계획 (Next Steps / Pivot)
+과적합 방지: 현재 모델도 0.781대보다는 낮은 것으로 보아, Dropout 비율을 조금 더 높이거나(0.4 -> 0.5) Weight Decay를 미세 조정할 필요가 있음.
+앙상블 전략: 현재의 Wide MLP 구조에서 Seed를 더 다양하게 가져가는 N_REPEAT 증가 전략 고려.
+
+---
+
+### Experiment 08: Model Capacity Reduction & Regularization Boost
+Date: 2026-01-31
+Model: Wide MLP (93 → 256 → 128 → 1) [파생변수 2개 포함]
+file: 06_Wide_MLP_v2_256_reg.ipynb
+Status: Failed to Surpass Baseline (AUC 0.7723)
+
+1. 시도 내용 (Intended Strategy)
+모델 경량화: 과적합 방지를 위해 첫 번째 레이어 노드 수를 절반으로 축소 (512 → 256).
+규제 강화: Dropout 비율 상향 (0.4/0.2 → 0.5/0.3)을 통해 일반화 성능 유도.
+변수 유지: 지난 실험에서 추가한 qa_std, tp_sum 파생 변수를 그대로 유지한 채 학습.
+
+2. 결과 분석 (Result Analysis)
+Validation AUC: 0.77230 (+/- 0.00511)
+
+분석: 
+1. 미미한 반등: Exp 07(0.7712) 대비 약 +0.001 상승했으나, 여전히 베이스라인(0.7811)에 한참 못 미침. 
+2. 변수 오염 가능성: 모델 구조를 경량화하고 규제를 걸었음에도 점수 회복이 안 되는 것으로 보아, 추가된 파생 변수(qa_std, tp_sum)가 AUC 최적화에 오히려 방해 요인이 되고 있다고 판단됨. 
+3. 구조적 한계: BatchNorm과 LeakyReLU의 조합이 현재 데이터 전처리 로직과 완벽히 결합되지 않았을 가능성 확인.
+
+3. 향후 계획 (Next Steps / Pivot)
+전략적 회귀: 파생 변수를 모두 제거하고, 가장 점수가 좋았던 코드(0.7811)의 데이터 셋팅으로 완전히 복귀.
+미세 조정: 데이터는 건드리지 않고, 모델의 레이어 크기나 학습률(Learning Rate)만 미세하게 조정하여 단일 AUC 0.778 이상 확보 시도.
+
+---
+
+### Experiment 09: Back to 0781 Baseline with Node Expansion (256)
+Date: 2026-01-31
+Model: Wide MLP (91 → 256 → 32 → 1)
+file: 07_Back_to_0781_v1.ipynb
+Status: Completed (Significant Potential Found)
+
+1. 시도 내용 (Intended Strategy)
+전략: 성능이 가장 좋았던 0.781 코드의 데이터 전처리(91개 피처, 수동 스케일링)로 완전히 회귀.
+모델 수정: 기존 180 노드에서 256 노드로 확장하여 모델의 표현력 증대 시도.
+로직: Baseline 특유의 2. - torch.sigmoid 결과 산출 방식 유지.
+
+2. 결과 분석 (Result Analysis)
+평균 Validation AUC: 0.77272
+최고 AUC 기록: 0.78607 (특정 폴드에서 매우 높은 성능 발휘)
+
+분석: 
+1. 변수 제거의 정당성: 불필요한 파생 변수를 제거하자마자 최고 AUC가 0.786까지 치솟음. 피처 정제(Cleaning)가 효과적이었음. 
+2. 불안정성 존재: 최고점은 높으나 평균이 0.772인 것으로 보아, 시드(Seed)나 폴드 구성에 따라 성능 편차가 큼. 
+3. 가능성 확인: 모델 구조는 이미 충분히 고득점 가능성을 내포하고 있음.
+
+3. 향후 계획 (Next Steps / Pivot)
+Seed Ensemble 본격 가동: 단일 모델 튜닝보다는 여러 시드의 결과물을 합쳐 편차를 줄이는 전략이 필요함.
+제출 전략: N_REPEAT를 대폭 늘려(10~20) 안정적인 0.78대 평균 점수 확보.
+
+---
+
+### Experiment 10: Heavy Seed Ensemble (Robustness Test)
+Date: 2026-01-31
+Model: Wide MLP (91 → 256 → 32 → 1)
+File: 08_Seed_Esemble_v1.ipynb
+Status: Completed (Baseline Stabilized)
+
+1. 시도 내용 (Intended Strategy)
+목표: Exp 09에서 확인된 모델의 잠재력을 시드 앙상블을 통해 일반화하고 리더보드 점수 안정화.
+설정 변경: - N_REPEAT: 5 → 15 (시드 다양성 확보)
+           N_SKFOLD: 7 → 5 (학습 효율성 및 폴드당 데이터 비중 조정)
+로직 유지: 91개 순수 피처, 수동 스케일링, 2. - torch.sigmoid 출력 방식 유지.
+
+2. 결과 분석 (Result Analysis)
+평균 Validation AUC: 0.77233
+최고 AUC 기록: 0.77892
+분석: 
+1. 평균의 수렴: 반복 횟수를 15회로 대폭 늘렸음에도 평균 AUC가 0.772대에 머무는 것으로 보아, 현재 모델 구조와 전처리 하에서는 이 점수가 임계치(Baseline Peak)인 것으로 판단됨. 
+2. 최고점 하락 원인: 폴드 수를 줄임으로써(7→5) 개별 모델이 학습하는 데이터의 분산이 달라졌고, 특정 폴드에서 발생하던 '럭키샷(0.786)'이 앙상블 과정에서 희석됨. 
+3. 안정성 확보: 표준 편차가 줄어들며 리더보드 제출 시 Public/Private 점수 차이가 크지 않을 것으로 기대됨.
+
+3. 향후 계획 (Next Steps / Pivot)
+피처 엔지니어링 재검토: 모델 구조(MLP)와 시드 앙상블만으로는 0.78 벽을 넘기 어려움이 확인됨. 다시 '데이터'로 돌아가 노이즈가 적은 강력한 파생 변수(예: 질문 간 상관관계 등) 1~2개만 선별 도입 필요.
+Learning Rate 스케줄링: 현재 5e-3이 다소 공격적일 수 있으므로, 조금 더 낮은 LR로 더 오래 학습시키는 전략 고려.
+
+---
+
+### Experiment 11: TabNet for Feature Interaction & Attention
+Date: 2026-01-31
+Model: TabNet (Attention-based Tabular DL)
+File: 09_Tabnet_v1.ipynb
+Status: FAILED (Performance Degradation & Tech Issue)
+
+1. 시도 내용 (Intended Strategy)
+목표: MLP의 한계를 극복하기 위해 Sparsemax Attention을 활용하여 중요한 피처에 집중하고, 노이즈를 억제하는 정형 데이터 특화 아키텍처 도입.
+설정: 91개 피처 유지, 수동 스케일링 적용, n_d=32, n_a=32, n_steps=3 설정.
+로직: pytorch-tabnet 라이브러리를 사용하여 모델 스스로 피처 중요도를 학습하게 함.
+
+2. 결과 분석 (Result Analysis)
+평균 Validation AUC: 0.76093 (최고점 대비 약 -0.02 하락)
+발생 문제: 
+1. 성능 하락: Attention 메커니즘이 이 데이터셋의 심리 지표 간 상관관계를 MLP보다 정교하게 잡아내지 못함. 과적합이 빠르게 발생. 
+2. 기술적 오류: TypeError: Cannot convert a MPS Tensor to float64 발생. pytorch-tabnet 내부 로직이 M1 Pro의 MPS(float32 전용) 환경과 호환되지 않아 학습이 중단됨.
+결론: 현 데이터셋과 환경에서 TabNet 도입은 실익이 없으며, 오히려 안정성을 해침.
+
+3. 향후 계획 (Next Steps / Pivot)
+근본으로의 회귀: 검증된 0.78116 MLP 구조로 완전히 복귀.
+최적화 타겟 수정: 단순히 Loss가 낮은 모델이 아닌, AUC가 가장 높은 시점의 가중치를 저장하는 로직으로 변경하여 실질적인 점수 향상 도모.
+환경 최적화: 모든 텐서를 float32로 강제하여 MPS 호환성 완벽 확보.
+
+---
+
+## Experiment 12: Baseline Recovery with AUC-Targeted Optimization
+Date: 2026-01-31
+Model: Wide MLP (91 → 180 → 32 → 1)
+File: 07_Back_to_0781_v2.ipynb
+Status: Success (SOTA Reached)
+
+1. 시도 내용 (Intended Strategy)
+전략적 회귀: 0.78116 성공 당시의 전처리(91개 피처, 수동 스케일링)를 100% 복구하여 데이터의 무결성 확보.
+최적화 지표 변경: 모델 저장 기준을 Loss에서 Validation AUC로 변경. 학습 중 가장 높은 판별력을 보인 시점의 가중치를 포착.
+연산 안정화: MPS 환경에서 발생하던 데이터 타입 충돌을 float32 강제 변환과 view(-1) 적용으로 해결.
+
+2. 하이퍼파라미터 (Hyperparameters)
+N_REPEAT / N_SKFOLD: 5 / 7
+Architecture: 180 (LeakyReLU) → 32 (ReLU) → 1 (Output)
+Optimizer: AdamW (lr=5e-3, Weight Decay=7.8e-2)
+Scheduler: CosineAnnealingWarmRestarts (T_0=8)
+
+3. 검증 성능 (Validation Results)
+Mean Validation AUC: 0.77312
+Dacon Score (Public): **0.7810869275**
+
+비고: 로컬 검증 점수(0.773)보다 리더보드 점수가 높게 형성됨. 이는 AUC 최적화 방식이 리더보드 셋의 랭킹을 더 정확하게 예측하고 있음을 시사.
+
+---
+
+## Experiment 13: Automated Architecture Search via Optuna
+Date: 2026-01-31
+Model: Dynamic MLP (91 → 288 → 64 → 1)
+File: 07_Back_to_0781_v2_Optuna.ipynb
+Status: Success (Stable Baseline)
+
+1. 시도 내용 (Intended Strategy)
+구조 최적화: 고정된 노드 수(180-32)에서 벗어나 Optuna를 통해 은닉층 노드 수(h1, h2)와 Dropout 비율을 실시간 탐색.
+하이브리드 앙상블: 각 폴드별로 AUC 최고점을 기록한 시점의 가중치를 저장하여 최종 결과물 산출.
+모니터링 강화: tqdm을 도입하여 학습 진행 상황과 실시간 AUC 추이를 시각화.
+
+2. 최적 파라미터 (Optuna Best - Trial 7)
+h1 (Hidden Layer 1): 288
+h2 (Hidden Layer 2): 64
+drop_rate: 0.3792 (약 38%)
+Tuning Metric: Mean AUC 0.77067 (3-Fold CV 기준)
+
+3. 검증 성능 (Validation Results)
+Mean Validation AUC: 0.77272
+Dacon Score (Public): **0.7809398379**
+
+분석: 수동으로 설정한 Exp 12(0.78108)와 거의 대등한 성과를 보임. 특히 첫 번째 레이어의 노드 수를 180에서 288로 확장한 구조가 이 데이터셋의 복잡도를 더 잘 포착하는 것으로 판명됨.
+
+4. 분석 및 향후 계획 (Analysis & Next Steps)
+진단: 
+1. Optuna를 통해 찾아낸 288-64 구조가 기존 180-32 구조보다 수치상 안정적임. 
+2. 다만 리더보드 점수는 Exp 12가 근소하게 높으므로, 특정 시드(Seed)에 의한 운적인 요소 혹은 과적합 경계선에 걸쳐있을 가능성이 있음.
+조치: Optuna가 제안한 288-64 구조를 표준으로 삼되, 과적합을 방지하기 위해 drop_rate를 0.4 수준으로 고정하는 것도 고려 가능.
+
+계획: - Strategy B 실행: 최고점 모델(Exp 12: 0.78108)과 Optuna 모델(Exp 13: 0.78093)의 결과를 5:5 혹은 7:3으로 앙상블하여 리더보드 0.782 돌파 시도.
+현재 모델의 한계를 돌파하기 위해 학습률(lr) 스케줄러를 ReduceLROnPlateau 등으로 변경하여 더 세밀한 수렴 시도.
