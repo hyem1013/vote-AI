@@ -356,3 +356,157 @@ Dacon Score (Public): **0.7809398379**
 
 계획: - Strategy B 실행: 최고점 모델(Exp 12: 0.78108)과 Optuna 모델(Exp 13: 0.78093)의 결과를 5:5 혹은 7:3으로 앙상블하여 리더보드 0.782 돌파 시도.
 현재 모델의 한계를 돌파하기 위해 학습률(lr) 스케줄러를 ReduceLROnPlateau 등으로 변경하여 더 세밀한 수렴 시도.
+
+---
+
+### Experiment 14: Simple Ensemble (1:1:1) of Top MLP Models
+Date: 2026-02-01
+Model: Ensemble (m1 + m2 + m3)
+File: 08_Simple_Ensemble_111.ipynb
+Status: Failed to Surpass Baseline
+
+1. 시도 내용 (Intended Strategy)
+목표: 서로 다른 최적화 기준(Loss vs AUC)과 구조(180 vs 288)를 가진 상위 3개 모델을 단순 평균하여 리더보드 점수 갱신 시도.
+대상 모델:
+m1 (0.78116): Baseline (Loss-based, 180-32)
+m2 (0.78108): Recovery (AUC-based, 180-32)
+m3 (0.78093): Optuna (AUC-based, 288-64)
+
+방법: 각 모델의 예측값(voted)을 1:1:1 산술 평균.
+
+2. 분석 결과 (Analysis Results)
+상관관계(Correlation): - m1-m2: 0.99969
+                       m1-m3: 0.99938
+                       m2-m3: 0.99936
+서브리더보드 성능:
+Ensemble: 0.782612 (Public) / 0.779847 (Private)
+Best Single (m1): 0.782615 (Public) / 0.779909 (Private)
+
+결과: 앙상블 점수가 단일 최고점 모델(m1)보다 낮게 형성됨.
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+진단: 모델 간 상관관계가 0.999 이상으로 지나치게 높아 앙상블을 통한 오차 상쇄 효과가 발생하지 않음. 오히려 성능이 낮은 모델이 섞이면서 최고점 모델의 성능을 희석(Dilution)시키는 결과 초래.
+조치: 단순 산술 평균 대신, 순위 기반의 Rank Averaging이나 Private 점수가 더 높았던 모델(m2)에 가중치를 두는 Weighted Blending 검토 필요.
+계획: 머신러닝 모델 사용이 불가능하므로, MLP 내부에서 **Activation Function 변경(ELU, SELU 등)**이나 **입력 피처의 도메인 결합(Feature Interaction)**을 통해 모델 간의 상관관계를 강제로 낮춘 '이질적 MLP'를 생성하여 재앙상블 시도.
+
+---
+
+### Experiment 15: Diversity-Driven Ensemble (Focal-SNN)
+Date: 2026-02-01
+Model: Ensemble (m1: Loss-based + m4: Focal-SNN)
+File: 09_Diversity_Focal_SNN_Model.ipynb / Experimental_Blend_92_08.csv
+Status: Success (New Public/Private SOTA)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: 모델 간 상관관계($Correlation$)를 낮추면, 단일 모델의 성능이 낮더라도 앙상블 시 오차 상쇄 효과로 인해 전체 성능이 향상될 것이다.
+- 실행: 기존 LeakyReLU + BatchNorm + BCE 조합을 탈피하여, SELU + AlphaDropout + Focal Loss 구조의 이질적 MLP(m4)를 신규 학습.
+- 앙상블: 성능 차이를 고려하여 92:8(m1:m4) 비율의 초보수적 가중 평균 수행.
+
+2. 검증 수치 및 상관관계
+m4 (SNN-Focal) 성능: Mean Validation AUC 0.77077 (기준치 0.779 미달)
+상관계수 (m1 vs m4): 0.9751기존 앙상블(Exp 14)의 0.999 대비 다양성이 약 25배 확보됨.
+
+서브리더보드 결과:
+Ensemble (92:8): **0.782622** (Public) / **0.779936** (Private)
+Best Single (m1): 0.782615 (Public) / 0.779909 (Private)
+결과: Public 점수와 Private 점수 모두에서 기존 최고점 경신 성공.
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+진단: 0.770점대의 낮은 성능임에도 불구하고 0.975라는 '상대적으로 낮은' 상관관계가 앙상블 시너지의 핵심 동력으로 작용함. 특히 Focal Loss가 포착한 'Hard Sample'에 대한 정보가 m1의 예측을 미세 보정한 것으로 판단됨.
+조치: 0.781대의 높은 점수를 유지하면서도 Private 방어력이 검증된 모델(m2)을 추가 결합하여 안정성 극대화 필요.
+계획: 마지막 남은 제출 기회 1회를 위해 **[Public SOTA(m1) + Private SOTA(m2) + Diversity(m4)]**의 6:3:1 삼각 가중 앙상블을 최종 시도함.
+
+---
+
+| 번호 | 유형 | 핵심 전략 | 비고 |
+| :--- | :--- | :--- | :--- |
+| 03 | **Single MLP (180-32)** | Loss 기반 최적화 | Baseline (0.78116) |
+| 12 | **Single MLP (180-32)** | AUC 기반 최적화 | Private 최적화 모델 |
+| 13 | **Optuna MLP (288-64)** | 구조 자동 탐색 | 구조 다양성 확보 |
+| 15 | **Single SNN (SELU)** | Focal Loss | Diversity 모델 (0.9751 Corr) |
+| 10 | **Ensemble** | Triangular Weight (6:3:1) | 현재 최고점 갱신용 |
+
+---
+
+### Experiment 16: Triangular Weighted Ensemble (6:3:1)
+Date: 2026-02-01
+Model: Ensemble (m1: 60%, m2: 30%, m4: 10%)
+File: 16_Triangular_Ensemble_631_.csv
+Status: Success (Private SOTA / Public Minor Drop)
+
+1. 분석 결과
+Public: 0.78255 (Exp 15 대비 -0.00007)
+Private: 0.77997 (Exp 15 대비 +0.00004)
+
+결론: Public 점수의 미세 하락은 아쉽지만, 실제 순위 결정에 중요한 Private 점수가 올랐으므로 모델의 일반화 성능은 강화됨.
+
+---
+
+### Experiment 17: OOF (Out-of-Fold) System Infrastructure
+Date: 2026-02-01
+Model: m1(Exp11-SOTA), m2(Exp12-AUC), m4(Exp15-SNN)
+File: 17_OOF_Generation_m1_m2_m4.ipynb
+Status: Completed (System Built)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: 각 모델의 학습 데이터에 대한 검증 예측값(OOF)을 확보하면, 메인 리더보드 제출 없이도 로컬에서 수학적 가중치 최적화 및 앙상블 성능 예측이 가능할 것이다.
+- 실행: m1, m2, m4의 원본 하이퍼파라미터(Batch Size 72/128, Epoch 48/60, Repeat 5, Fold 7)를 엄격히 준수하여 실 제출물과 정합성이 일치하는 OOF 데이터(.npy) 생성.
+- 조치: BatchNorm 연산 시 마지막 배치 데이터 부족 에러를 해결하기 위해 `drop_last=True` 옵션 적용.
+
+2. 검증 수치 (Local OOF AUC Results)
+- m1 (Exp11-SOTA) OOF AUC: **0.77212**
+- m2 (Exp12-AUC) OOF AUC: **0.77233**
+- m4 (Exp15-SNN) OOF AUC: **0.77330**
+- 결과: 단일 모델 기준 로컬 검증 성능은 SNN(m4)이 가장 우수함을 확인.
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+- 진단: 로컬 AUC 지표 확보를 통해 "감"에 의존하던 앙상블에서 벗어나 데이터 기반의 의사결정 체계 구축. SNN 모델의 높은 OOF 점수는 앙상블 시 강력한 보정 엔진이 될 가능성을 시사함.
+- 조치: 파일명에 AUC 점수를 명기하여(`[모델명]_AUC_[점수].npy`) 실험 관리 효율성 증대.
+- 계획: **Exp 18**에서 `scipy.optimize`를 활용하여 위 3개 모델의 로컬 AUC를 극대화하는 수학적 최적 가중치 도출 시도.
+
+---
+
+### Experiment 18: Local Ensemble Weight Optimization
+Date: 2026-02-01
+Model: Ensemble (m1: 33%, m2: 33%, m4: 34%)
+File: 18_Local_Ensemble_Optimization.ipynb
+Status: Success (Found Mathematical Optimal Weights)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: 직관에 의존한 6:3:1 가중치보다 수학적 최적화(SLSQP)를 통해 도출된 가중치가 로컬 AUC 및 실제 성능을 더 효과적으로 개선할 것이다.
+- 실행: Exp 17에서 생성된 m1, m2, m4의 OOF(.npy) 데이터를 활용하여 `scipy.optimize` 기반의 가중치 최적화 수행.
+
+2. 검증 수치 및 결과
+- 기존 가중치 (6:3:1) Local AUC: 0.77293
+- 최적 가중치 (33:33:34) Local AUC: **0.77351** (약 +0.00058 개선)
+- 도출된 비율: m1(0.3300) : m2(0.3299) : m4(0.3400)
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+- 진단: 세 모델의 가중치가 거의 균등하게 수렴함. 이는 m4(SNN)가 단순히 성능이 낮은 모델이 아니라, m1/m2와 낮은 상관관계를 가지며 강력한 보완 역할을 수행하고 있음을 정량적으로 증명함.
+- 조치: 발견된 수학적 황금 비율을 적용하여 메인 리더보드 타격용 최종 앙상블 파일 생성 준비.
+- 계획: **Exp 19**에서 최적 비율 기반의 최종 제출물 생성.
+
+---
+
+### Experiment 19: Mathematical Optimal Ensemble (33:33:34)
+Date: 2026-02-01
+Model: Ensemble (m1: 33%, m2: 32.99%, m4: 34%)
+File: 19_Optimal_Ensemble_3334_.csv
+Status: Completed (Local SOTA / Leaderboard Minor Drop)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: Exp 18에서 수학적으로 도출된 로컬 최적 가중치(33:33:34)를 적용하면, 직관적 6:3:1 조합보다 실제 성능(AUC)이 개선될 것이다.
+- 실행: 가장 높은 로컬 OOF AUC(0.77351)를 기록한 비율을 최종 테스트 세트에 적용하여 서브 리더보드 점수 확인.
+- 특징: m4(SNN) 모델의 비중을 10% -> 34%로 대폭 상향하여 m1, m2와 동등한 영향력을 부여함.
+
+2. 검증 수치 및 결과
+- 로컬 OOF AUC: **0.77351** (전체 실험 중 로컬 최고점)
+- 서브 리더보드 결과:
+    - Public: **0.7825735829** (Exp 16 대비 +0.000022 상승)
+    - Private: **0.7798704512** (Exp 16 대비 -0.000103 하락)
+- 결과: Public 점수는 미세하게 올랐으나, 순위에 결정적인 Private 점수가 하락하며 일반화 성능 저하 확인.
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+- 진단: 로컬 AUC가 높음에도 Private 점수가 떨어진 것은 SNN(m4) 모델이 학습 데이터의 특정 노이즈까지 학습하여 실제 테스트셋(Private)의 분포를 벗어났을(Overfitting) 가능성이 큼. 34%의 비중은 SNN의 개성을 반영하기에 너무 과도했음이 입증됨.
+- 조치: 향후 앙상블 시 m4의 비중을 다시 10% 내외로 하향 조정하거나, 모델 자체의 규제(Regularization) 강화 필요.
+- 계획: 단순 가중치 조절의 한계를 인지. **Exp 20**에서는 모델의 예측치를 다시 학습 데이터로 사용하는 **Stacking(Meta-Learning)** 시스템을 구축하거나, 파생 변수(Feature Engineering) 생성을 통해 m1 자체의 체력을 키우는 전략으로 선회.
