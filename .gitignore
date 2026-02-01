@@ -1,6 +1,7 @@
 # data
 /data
 /notebooks/*/submissions/
+/notebooks/*/oof_data/
 *.csv
 *.parquet
 
