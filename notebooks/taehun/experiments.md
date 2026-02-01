@@ -510,3 +510,92 @@ Status: Completed (Local SOTA / Leaderboard Minor Drop)
 - 진단: 로컬 AUC가 높음에도 Private 점수가 떨어진 것은 SNN(m4) 모델이 학습 데이터의 특정 노이즈까지 학습하여 실제 테스트셋(Private)의 분포를 벗어났을(Overfitting) 가능성이 큼. 34%의 비중은 SNN의 개성을 반영하기에 너무 과도했음이 입증됨.
 - 조치: 향후 앙상블 시 m4의 비중을 다시 10% 내외로 하향 조정하거나, 모델 자체의 규제(Regularization) 강화 필요.
 - 계획: 단순 가중치 조절의 한계를 인지. **Exp 20**에서는 모델의 예측치를 다시 학습 데이터로 사용하는 **Stacking(Meta-Learning)** 시스템을 구축하거나, 파생 변수(Feature Engineering) 생성을 통해 m1 자체의 체력을 키우는 전략으로 선회.
+
+---
+
+### Experiment 20: Feature Engineering (FE) Model
+Date: 2026-02-01
+Model: m5 (MLP + FE + Cleaning)
+Status: Success (New Single Model OOF SOTA)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: 이상치(시간 빌런, 가족 빌런)를 정제하고, 심리학적 지표(Mach_Score)를 추가하면 모델의 근본적인 판별 능력이 상승할 것이다.
+- 실행: 99% Winzorization 적용, 역채점 기반 Mach_Score 및 응답 시간 통계 피처 생성 후 MLP 학습.
+
+2. 검증 수치 및 결과
+- m5 OOF AUC: **0.77338** (단일 모델 중 최고 기록)
+- 특징: m4(0.77330)보다 높은 점수를 기록하며, 데이터 정제의 중요성 입증.
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+- 진단: 파생 변수가 유의미한 정보를 제공함. 특히 이상치 제거로 인해 모델이 훨씬 안정적인 Gradient를 확보함.
+- 계획: m1, m2, m4, m5를 모두 결합하는 4종 앙상블(Exp 21) 진행.
+
+---
+
+### Experiment 21: Optuna-based 4-Way Ensemble Optimization
+Date: 2026-02-01
+Model: 4-Way Ensemble (m1, m2, m4, m5)
+File: 21_Optuna_Ensemble_4Way.ipynb
+Status: Success (New Local SOTA: 0.77437)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: 모델의 개수가 늘어남에 따라(4종), 단순 가중치 합보다 베이지안 최적화(Optuna)를 통한 정밀한 가중치 배분이 더 높은 AUC를 산출할 것이다.
+- 실행: m5 학습 시 제거된 이상치를 반영하여 m1, m2, m4의 인덱스를 재정렬(Alignment)한 후, 200회의 Trial을 통해 최적 가중치 도출.
+- 모델 구성: 
+    - m1: Exp11-SOTA (0.78116)
+    - m2: Exp12-AUC (0.78108)
+    - m4: Exp15-SNN (Diversity 모델)
+    - m5: Exp20-FE (Feature Engineering 모델)
+
+2. 검증 수치 및 결과 (Local AUC)
+- **최적화된 로컬 AUC: 0.77437** (Exp 18 대비 +0.00086 개선)
+- **도출된 원본 가중치 (Raw Weights):**
+    - w1 (m1): 0.0210
+    - w2 (m2): 0.0913
+    - w4 (m4): 0.9788
+    - w5 (m5): 0.5170
+- **정규화 가중치 (비중 %):**
+    - m4(SNN): **60.9%** / m5(FE): **32.1%** / m2(AUC): **5.7%** / m1(SOTA): **1.3%**
+
+3. 분석 및 향후 계획 (Analysis & Next Steps)
+- 진단: **SNN(m4)의 압도적 비중(61%)**과 **FE(m5)의 강력한 기여(32%)**가 확인됨. 기존 에이스였던 m1, m2의 비중이 극도로 낮아진 것은, m4의 구조적 다양성과 m5의 정제된 피처가 기존 모델의 성능을 상회하고 있음을 의미함.
+- 조치: 발견된 수학적 황금 비율(약 1 : 6 : 61 : 32)을 적용하여 메인 리더보드 0.79 돌파를 위한 최종 제출물 생성.
+- 계획: **Exp 22**에서 해당 가중치를 적용한 최종 Submission 파일 생성 및 제출.
+
+---
+
+### Experiment 22: Optuna-Weighted Final Ensemble
+Date: 2026-02-01
+File: 22_Optuna-Weighted Ensemble.ipynb
+Status: Fail (Public 0.718 / Private 0.715)
+
+1. 분석 및 진단 (Post-Mortem)
+- **원인:** OOF 검증 데이터에 대한 과적합으로 인해 m4(SNN)에 비정상적으로 높은 가중치(61%)가 부여됨.
+- **결과:** 실제 테스트 데이터와의 분포 차이로 인해 점수가 0.07 가량 폭락하는 참사 발생.
+- **교훈:** Optuna 가중치가 특정 모델에 과도하게 쏠릴 경우(예: 특정 모델 50% 이상), 이는 일반화 성능 저하의 강력한 신호이므로 즉시 폐기해야 함.
+
+2. 조치 사항
+- 확률값 직접 평균 대신 **Rank Averaging** 기법 도입 결정.
+- 검증된 SOTA 모델(m1, m2)의 비중을 80% 이상으로 강제 고정하여 베이스라인 복구 시도.
+
+---
+
+### Experiment 23: Safety Recovery Rank Ensemble (Simulation)
+Date: 2026-02-01
+Model: Rank Ensemble (m1:0.4, m2:0.4, m5:0.2)
+file: 23_Safety_Recovery_Rank_82.ipynb
+Status: Completed (Simulation Only - Not Submitted)
+
+1. 시도 내용 (Intended Strategy)
+- 가설: 0.71 참사를 복구하기 위해 확률값 대신 순위(Rank)를 사용하고, 검증된 모델(m1, m2)의 비중을 80%로 높여 안전성을 확보한다.
+- 실행: m1_rank(0.4) + m2_rank(0.4) + m5_rank(0.2) 조합으로 로컬 AUC 시뮬레이션 수행.
+
+2. 검증 수치 및 결과
+- **최종 로컬 AUC: 0.77327**
+- 분석: m5 단일 모델(0.77353)보다 낮은 수치를 기록함. Rank Averaging이 변동성을 줄여주지만, 성능이 뛰어난 m5의 신호를 m1, m2가 다소 희석(Dilution)시키는 효과가 발생함.
+
+3. 향후 계획 (Next Steps / Pivot)
+- 진단: 단순 Rank 앙상블로는 m5의 잠재력을 온전히 끌어내지 못함. 
+- 조치: 제출권 낭비를 막기 위해 해당 버전은 제출하지 않기로 결정.
+- 계획: m5 모델의 피처 엔지니어링을 더 강화하거나, m5와 m1/m2의 가중치 비율을 다시 조정하여 0.774 이상의 로컬 AUC가 나올 때까지 제출 보류.
+
