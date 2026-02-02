@@ -91,3 +91,24 @@ AUC: 0.7638 (seed 42, 202, 777 mean)
 - 라벨: voted==2 -> 1 (class2 양성)
 - AUC: oof 0.75926 (해커톤 제출 X)
 - 제출파일: submission_ft_full_seed42.csv
+
+
+
+---------- 19~21 및 colab 정리 ----------
+
+[날짜 미정] - 19_v5_optuna_mlp.ipynb
+- 모델: PyTorch MLP + Optuna (v5 피처셋 117개)
+- 제출파일: submission_19_v5_optuna_mlp.csv
+
+[날짜 미정] - 20_mlp_optuna_claude18.ipynb
+- 모델: PyTorch MLP + Optuna (CLAUDE18 피처)
+- 제출파일: submission_20_mlp_optuna_claude18_*.csv
+
+[날짜 미정] - 21_v5_fe_swap_ensemble.ipynb
+- 모델: MLP + FT-Transformer 앙상블 (v5 FE 교체 버전) -> 태헌님 요청해주신 테스트 
+- 제출파일: submission_21_v5_fe_swap_ensemble.csv / submission_21_v5_fe_swap_mlp.csv / submission_21_v5_fe_swap_ft.csv
+
+[날짜 미정] - colab_v7_optuna.ipynb
+- 모델: v7 Optuna (MLP/FT/앙상블)
+- 제출파일: submission_colab_v7_optuna_ensemble.csv / submission_colab_v7_optuna_mlp.csv / submission_colab_v7_optuna_ft.csv
+- 리포트: report_colab_v7_optuna.json

@@ -22,7 +22,10 @@
 - 16_v5_ResMLP_v1.ipynb (구: 21_v5_test.ipynb) → 16_v5_ResMLP_v1.ipynb
 - 17_v5_FTLight_v1.ipynb (구: 22_v5_test.ipynb) → 17_v5_FTLight_v1.ipynb
 - 18_v5_empty.ipynb (구: 23_v5_test.ipynb) → 18_v5_empty.ipynb
-- 19_v5_empty2.ipynb (구: 24_v5_test.ipynb) → 19_v5_empty2.ipynb
+- 19_v5_empty2.ipynb (구: 24_v5_test.ipynb) → 19_v5_optuna_mlp.ipynb
+- 20_TE_Test.ipynb → 20_mlp_optuna_claude18.ipynb
+- 21_th_test.ipynb → 21_v5_fe_swap_ensemble.ipynb
+- colab.ipynb → colab_v7_optuna.ipynb
 
 - submission_01_MLP_v1_baseline.csv → submission_01_MLP_v1_baseline.csv
 - submission_02_FTTransformer_v1_optuna.csv → submission_02_FTTransformer_v1_optuna.csv
@@ -49,3 +52,20 @@
 - submission_15_MLP_v4_new3.csv → submission_15_MLP_v4_new3.csv
 - submission_16_v5_ResMLP_v1.csv → submission_16_v5_ResMLP_v1.csv
 - submission_17_v5_FTLight_v1.csv → submission_17_v5_FTLight_v1.csv
+- submission_optuna_mlp.csv → submission_19_v5_optuna_mlp.csv
+- best_params.txt → best_params_19_v5_optuna_mlp.txt
+- submission_mlp_optuna_claude18_auc0.76570_0130_165000.csv → submission_20_mlp_optuna_claude18_auc0.76570_0130_165000.csv
+- submission_mlp_optuna_claude18_auc0.76570_0130_165000_params.json → submission_20_mlp_optuna_claude18_auc0.76570_0130_165000_params.json
+- submission_20_TE_Test_auc0.76570_0130_165000.csv → submission_20_mlp_optuna_claude18_auc0.76570_0130_165000.csv
+- submission_20_TE_Test_te1_sum1_raw1_auc0.76833_0130_162044.csv → submission_20_mlp_optuna_claude18_te1_sum1_raw1_auc0.76833_0130_162044.csv
+- submission_20_TE_Test_claude18_auc0.76570_0130_165000_params.json → submission_20_mlp_optuna_claude18_auc0.76570_0130_165000_params.json
+- submission_ensemble_fe_swap.csv → submission_21_v5_fe_swap_ensemble.csv
+- submission_mlp_fe_swap.csv → submission_21_v5_fe_swap_mlp.csv
+- submission_ft_fe_swap.csv → submission_21_v5_fe_swap_ft.csv
+- submission_21_th_test_ensemble.csv → submission_21_v5_fe_swap_ensemble.csv
+- submission_21_th_test_mlp.csv → submission_21_v5_fe_swap_mlp.csv
+- submission_21_th_test_ft.csv → submission_21_v5_fe_swap_ft.csv
+- submission_v7_optuna_ensemble.csv → submission_colab_v7_optuna_ensemble.csv
+- submission_v7_optuna_mlp.csv → submission_colab_v7_optuna_mlp.csv
+- submission_v7_optuna_ft.csv → submission_colab_v7_optuna_ft.csv
+- report_v7_optuna.json → report_colab_v7_optuna.json
