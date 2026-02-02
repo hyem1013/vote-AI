@@ -392,9 +392,9 @@ Best Single (m1): 0.782615 (Public) / 0.779909 (Private)
 ---
 
 ### Experiment 15: Diversity-Driven Ensemble (Focal-SNN)
-Date: 2026-02-01
-Model: Ensemble (m1: Loss-based + m4: Focal-SNN)
-File: 09_Diversity_Focal_SNN_Model.ipynb / Experimental_Blend_92_08.csv
+Date: 2026-02-sed + m4: Focal-SNN)
+File: 09_Diversity_Focal_S01
+Model: Ensemble (m1: Loss-baNN_Model.ipynb / Experimental_Blend_92_08.csv
 Status: Success (New Public/Private SOTA)
 
 1. 시도 내용 (Intended Strategy)
@@ -598,4 +598,119 @@ Status: Completed (Simulation Only - Not Submitted)
 - 진단: 단순 Rank 앙상블로는 m5의 잠재력을 온전히 끌어내지 못함. 
 - 조치: 제출권 낭비를 막기 위해 해당 버전은 제출하지 않기로 결정.
 - 계획: m5 모델의 피처 엔지니어링을 더 강화하거나, m5와 m1/m2의 가중치 비율을 다시 조정하여 0.774 이상의 로컬 AUC가 나올 때까지 제출 보류.
+
+---
+
+## Experiment 24: Deep Feature Engineering (DFE) v1
+- **Date:** 2026-02-02
+- **Model:** m6 (Deep MLP: 288 → 64 → 1)
+- **File:** 24_Deep_Feature_Engineering_v1.ipynb
+- **Status:** FAILED (Performance Degradation)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** 단순히 문항을 합치는 것을 넘어, 응답자의 '심리적 태도'와 '시간 배분 전략'을 수치화하면 모델의 변별력이 극대화될 것이다.
+- **추가 파생 변수:**
+    - **심리학적 하위 척도:** `Views_Score` (냉소), `Tactics_Score` (조종 전략)
+    - **응답 모순 지표:** `Conflict_Index` (QqA와 QcA의 응답 괴리율)
+    - **상대적 시간 비중 (20개):** 각 문항의 응답 시간을 전체 소요 시간으로 나눈 `Relative_E_time` 시리즈
+- **모델 구조:** 늘어난 피처 수(약 120개)를 수용하기 위해 은닉층 노드를 **288-64**로 확장.
+
+### 2. 검증 성능 (Validation Results)
+- **최종 OOF AUC:** **0.77275**
+- **비교 지표:** m5(0.77353) 대비 **-0.00078** 하락
+- **진단:** 단일 모델 성능이 기존 SOTA(m1, m2) 수준 이하로 떨어짐에 따라 리더보드 제출 보류 결정.
+
+### 3. 분석 및 패착 원인 (Analysis & Post-Mortem)
+- **피처 희석 (Feature Dilution):** 20개의 상대적 시간 비중 피처들이 서로 높은 상관관계를 가지며 대거 유입됨에 따라, 모델이 `Mach_Score`와 같은 핵심 신호(Signal)에 집중하지 못하고 노이즈를 학습함.
+- **다중공선성 문제:** 시간 비중 피처들은 합이 1이 되는 구조적 특성상 강한 상관관계를 가지며, 이는 MLP 가중치 학습의 불안정성을 초래함.
+- **모델 용량 과잉:** 노드 수를 늘린 것이 데이터의 본질적 패턴이 아닌 지엽적 노이즈를 암기하는 과적합(Overfitting)으로 이어짐.
+
+### 4. 향후 계획 (Next Steps / Pivot)
+- **전략적 다이어트:** 통계적으로 유의미했던 `Conflict_Index`와 `Sub-scales`만 남기고 20개의 시간 비중 피처를 과감히 삭제.
+- **구조 원복:** 모델 구조를 가장 안정적이었던 **180-32** 또는 **256-32**로 회귀하여 일반화 성능 확보.
+- **신규 지표:** 응답의 일관성을 단일 변수로 보여주는 **'응답 분산(Variance)'** 피처 도입 검토 (Exp 25).
+
+---
+
+## Experiment 25: Refined Deep Feature Engineering (DFE) v2
+- **Date:** 2026-02-02
+- **Model:** m7 (Refined MLP: 256 → 32 → 1)
+- **File:** `25_Refined_Deep_Feature_Engineering.ipynb`
+- **Status:** FAILED (Direction Mismatch)
+
+### 1. 사용 피처 (Feature Engineering Strategy)
+- **전략:** "Less is More" - 노이즈를 유발하는 변수를 과감히 삭제하고 심리학적 본질에 집중.
+- **삭제:** `Relative_E_time` (Exp 24에서 실패 원인이 된 20개 시간 비중 피처 전량 제거).
+- **유지:** `Views_Score`, `Tactics_Score`, `Conflict_Index` (검증된 심리 지표).
+- **신규:** **`Q_Var`** (20개 질문 답변의 분산) - 응답자가 얼마나 극단적으로 혹은 일관되게 답했는지를 보여주는 강력한 성실도 지표.
+- **이상치:** `familysize > 50` 제거 및 시간 데이터 상위 1% Winzorization 유지.
+
+### 2. 검증 성능 (Validation Results)
+- **최종 OOF AUC:** **0.77375** 👑
+- **모델 간 비교 (Local AUC):**
+    - **m1 (LB 0.78116):** 0.77212 (대비 **+0.00163** 상승)
+    - **m5 (기존 최고점):** 0.77353 (대비 **+0.00022** 상승)
+    - **m6 (실패작):** 0.77275 (대비 **+0.00100** 반등)
+- **진단:** 불필요한 변수를 걷어내고 `Q_Var`를 도입한 것이 역대 최고 로컬 점수로 이어짐.
+- **Public LB Score:** 0.2179331762 (Inverted AUC)
+- **Private LB Score:** 0.2206507587 (Inverted AUC)
+
+### 3. 분석 및 향후 계획 (Analysis & Next Steps)
+- **원인 분석:** - 모델 m7의 성능(AUC 0.782 수준)은 확보되었으나, 예측값의 방향이 리더보드 기준과 정반대로 생성됨.
+    - m1(작은 값=투표)과 m7(큰 값=투표)의 불일치로 인해 앙상블 및 단일 제출 시 점수 폭락 발생.
+- **교훈:** 제출 전 반드시 베이스라인 모델(m1)과의 상관계수(Correlation)가 음수인지 양수인지 확인하여 방향을 일치시켜야 함.
+- **계획:** 남은 제출 기회(2회) 중 1회를 활용하여 **m7 단일 모델**을 제출, 0.71 참사를 복구하고 실제 리더보드 실력을 확인. 이후 최고점 모델(m1/m2)과의 최종 Rank 앙상블 검토.
+
+---
+
+## Experiment 26: Master Rank Blending (m1 + m7)
+- **Date:** 2026-02-02
+- **Model:** Rank Ensemble (m1: 0.5, m7: 0.5)
+- **Status:** **Success (Project SOTA achieved)**
+
+### 1. 주요 전략 및 해결 과제
+- **데이터 정합성:** m1(45,529행)과 m7(45,490행)의 행 수 차이를 인덱스 기반 재정렬(reindex)로 매칭하여 데이터 밀림 현상 방지.
+- **방향성 통일:** 진단 코드로 두 모델 모두 정방향(Large=Voted)임을 확인. 제출 시 m1 방식(Small=Voted)인 `2.0 - rank_p`를 적용하여 방향성 일치.
+- **기법:** 전처리와 구조가 다른 두 모델의 확률 스케일을 표준화하기 위해 Rank Averaging(5:5) 적용.
+
+### 2. 최종 성과 분석
+- **메인 리더보드 (Public):** **0.78150** (m1+m4 대비 +0.00031 상승, 목표치 0.78141 초과 달성)
+- **서브 리더보드 (Public):** **0.78295** (역대 최고점)
+- **서브 리더보드 (Private):** **0.78021** (최초 0.780 돌파 및 일반화 성능 입증)
+- **결론:** 로컬 성능이 가장 높았던 exp27(4:6)보다 exp26(5:5)이 실제 리더보드에서 더 높은 점수를 기록함. 이는 모델 간 균형이 무너질 때보다 동등하게 결합될 때 변동성에 더 강한(Generalizable) 모델이 생성됨을 시사함.
+
+### 3. 프로젝트 마무리
+- 0.71/0.21 점수 폭락 위기를 정밀한 인덱스 정렬과 방향성 분석으로 극복하고 최종 0.7815 고지 점령.
+- 최종 모델: `26_m1_m7_Rank_Ensemble_0.77364.csv`
+
+---
+
+## Experiment 27: Fine-tuned Rank Blending (m1:m7 = 4:6)
+- **Date:** 2026-02-02
+- **Model:** Rank Ensemble (m1: 0.4, m7: 0.6)
+- **Status:** Completed (Lower than Exp 26)
+
+### 1. 결과 분석
+- **Local AUC:** 0.77379 (역대 최고점)
+- **리더보드 역전:** 로컬 성능은 상승했으나 서브 리더보드(Pub/Priv) 점수는 하락. 이는 m7 모델의 특성이 특정 검증 셋에 더 최적화되었음을 시사함.
+- **결론:** 모델 간 비중이 균등한 **5:5 Rank Averaging(Exp 26)**이 가장 우수한 일반화 성능을 보임.
+
+### 2. 최종 결정
+- 메인 리더보드 타격을 위한 최종 모델로 **Exp 26**을 선정.
+
+---
+
+### 모델별 최종 성적 요약표 (최종 업데이트: 2026-02-02)
+
+| 모델 ID | 주요 특징 | Local AUC | 메인 LB (Pub) | 서브 LB (Pub) | 서브 LB (Priv) | 비고 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| m1 | 기본 MLP (Base) | 0.77212 | 0.78116 | 0.78261 | 0.77990 | 베이스라인 |
+| m2 | AUC 최적화 모델 | 0.77312 | 0.78108 | 0.78225 | 0.78004 | - |
+| m1+m4 | 92:8 가중 블렌딩 | - | 0.78119 | 0.78262 | 0.77993 | 기존 최고점 |
+| exp16 | Triangular (6:3:1) | - | - | 0.78255 | 0.77997 | - |
+| m7 | Refined Deep FE | 0.77375 | - | 0.21793 | 0.22065 | Inverted 제출 |
+| **exp26** | **m1+m7 Rank (5:5)** | **0.77364** | **0.78150** | **0.78295** | **0.78021** | **Main LB SOTA** |
+| exp27 | m1+m7 Rank (4:6) | 0.77379 | - | 0.78286 | 0.78014 | Local SOTA |
+
+---
 
