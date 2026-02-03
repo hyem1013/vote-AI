@@ -714,3 +714,222 @@ Status: Completed (Simulation Only - Not Submitted)
 
 ---
 
+## Experiment 28: FT-Transformer with m7 Refined FE (m8)
+- **Date:** 2026-02-03
+- **Model:** m8 (FT-Transformer via `rtdl`)
+- **Status:** Completed (Lower single performance than expected)
+
+### 1. 사용 피처 (Feature Engineering)
+- **m7 정제 로직 계승:** `familysize > 50` 제거 및 질문 답변(`Q_A`)의 표준편차가 0인 불성실 응답자 제거.
+- **DFE 피처 도입:** 응답 일관성을 나타내는 `Q_Var`, 역채점 기반 `Mach_Score`, 문항 간 모순을 측정하는 `Conflict_Index` 적용.
+- **스케일링:** `exp03`에서 성공적이었던 `Q_E` 로그 변환 및 수치형 데이터 전체에 대한 `StandardScaler` 적용.
+
+### 2. 하이퍼파라미터 (Hyperparameters)
+- **구조 최적화:** `exp03` Trial 13의 성공 파라미터인 `d_block=128`, `n_blocks=2`, `n_heads=8` 준수.
+- **학습 설정:** `lr=0.000975`, `batch_size=256`, `epochs=25` 설정.
+- **Optimizer:** AdamW (Weight Decay=0.01).
+
+### 3. 검증 성능 (Validation Results)
+- **Fold 1:** 0.76268
+- **Fold 2:** 0.77388
+- **Fold 3:** 0.77160
+- **Fold 4:** 0.76268
+- **Fold 5:** 0.77115
+- **Fold 6:** 0.76522
+- **Fold 7:** 0.77198
+- **Final OOF AUC: 0.76664**
+
+### 4. 분석 및 계획 (Analysis & Next Steps)
+- **진단:** `m7`의 강력한 피처들을 이식했음에도 불구하고, 단일 모델 AUC는 `exp03`(0.7760)이나 `m7`(0.7737)의 기록에 미치지 못함. 수치형 피처의 복잡도가 Transformer의 어텐션 학습에 노이즈로 작용했을 가능성 확인.
+- **의의:** 단일 성능은 낮으나, MLP 기반인 `m1`, `m7`과는 완전히 다른 Attention 메커니즘을 사용하므로 앙상블 시 오차 상쇄 효과(Diversity)를 기대할 수 있음.
+- **계획:** `m1(안정성) + m7(FE 엣지) + m8(구조 다양성)`을 결합한 **exp29: 3-Way Rank Ensemble**을 통해 메인 리더보드 0.79 돌파 시도.
+
+---
+
+## Experiment 29: 3-Way Rank Ensemble (m1 + m7 + m8) - Direction Corrected
+- **Date:** 2026-02-03
+- **Status:** FAILED (Significant CV/LB Gap)
+
+### 1. 결과 분석
+- **Local AUC:** 0.77387 (최고점 경신)
+- **Public LB:** 0.77137 (Exp 26 대비 -0.010 하락)
+- **Private LB:** 0.77199 (Exp 26 대비 -0.008 하락)
+
+### 2. 패착 원인
+- **m8의 낮은 일반화 성능:** 단독 성능이 낮은 m8을 1:1:1 비율로 섞으며 앙상블 전체의 리더보드 점수 하락 초래.
+- **피처 부작용:** m7의 DFE 피처들이 트랜스포머 모델에서 과적합을 유발하여 테스트셋 예측력을 저하시킴.
+
+---
+
+## Experiment 30: Weighted Rank Ensemble (m1 + m7 + m8) - Final Test
+- **Date:** 2026-02-03
+- **Status:** CRITICAL FAILURE (Discarding m8)
+
+### 1. 결과 분석
+- **Local AUC:** 0.77384 (수학적 최적화 결과)
+- **Public LB:** 0.73934 (Exp 26 대비 -0.042 폭락)
+- **Private LB:** 0.74466 (Exp 26 대비 -0.035 폭락)
+
+### 2. 결론 및 향후 계획
+- **m8의 정체:** FT-Transformer는 로컬 검증 셋에만 극도로 과적합되며, 테스트 셋에 대해서는 노이즈를 생성함.
+- **결정:** 앙상블에서 m8을 완전히 제외함. 다시 m1 + m7의 2-Way 체제로 복귀하여 0.79 고지를 노림.
+
+---
+
+---
+
+## Experiment 38: Master Rank Ensemble (5:5 Balanced)
+- **Date:** 2026-02-03
+- **Model:** Rank Ensemble (Exp 26: 0.5, Exp 37: 0.5)
+- **Status:** Completed (Sub LB Validation)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** 전처리가 다른 두 모델(m1+m7 기반 Exp 26, PL 기반 Exp 37)을 동등하게 결합하면 특정 모델의 오차를 상쇄하고 일반화 성능이 극대화될 것이다.
+- **실행:** Exp 26과 Exp 37의 예측치를 순위화(Rank)하여 5:5 비율로 산술 평균 수행.
+
+### 2. 결과 분석 (Result Analysis)
+- **진단:** 서브 리더보드 기준, Exp 26 단독 성적보다 하락함.
+- **원인:** Pseudo-Labeling(Exp 37)의 노이즈가 Exp 26의 정밀도를 희석(Dilution)시키는 효과가 발생함.
+
+### 3. 검증 성능 (Validation Results)
+- **서브 리더보드 (Public):** 0.7826128286
+- **서브 리더보드 (Private):** 0.7800646157
+
+---
+
+## Experiment 39: Weighted Rank Ensemble (7:3)
+- **Date:** 2026-02-03
+- **Model:** Rank Ensemble (Exp 26: 0.7, Exp 37: 0.3)
+- **Status:** Completed (Main LB Impact Test)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** Exp 38의 실패를 바탕으로, 검증된 SOTA 모델인 Exp 26의 비중을 높여(70%) 안정성을 확보하고 Exp 37의 새로운 시각을 30%만 반영한다.
+- **실행:** Exp 26과 Exp 37의 Rank 가중 평균 (7:3) 적용.
+
+### 2. 결과 분석 (Result Analysis)
+- **진단:** 메인 리더보드 점수가 0.78144로 수렴하며 기존 SOTA(Exp 26: 0.78150)를 넘어서지 못함.
+- **결론:** 단순 가중치 조절보다는 Pseudo-Labeling 데이터의 순도를 높이는(Threshold 강화) 근본적인 개선이 필요함.
+
+### 3. 검증 성능 (Validation Results)
+- **메인 리더보드 (Public):** 0.7814468895
+
+---
+
+## Experiment 40: Conservative Pseudo-Labeling (5% Selection)
+- **Date:** 2026-02-03
+- **Model:** MLP (m7 Architecture) + 5% Pseudo-Labeling
+- **Status:** Success (New Local SOTA)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** Exp 37(10% PL)의 실패 원인은 과도한 데이터 선별로 인한 노이즈임. 선별 임계치를 상위/하위 5%로 강화하여 데이터의 순도를 높이면 일반화 성능이 개선될 것이다.
+- **실행:** 하이브리드 피처(시너지 지표) 시도 후 로컬 AUC 하락 확인 -> 즉시 제거 후 m7 순수 피처셋으로 회귀하여 변수 통제.
+- **검증:** Pseudo-label을 제외한 원본 학습 데이터에 대해서만 AUC를 측정하는 'Pure OOF AUC' 시스템 도입.
+
+### 2. 결과 분석 (Result Analysis)
+- **진단:** 로컬 신기록 달성. 5% 임계치 강화로 노이즈가 효과적으로 억제됨. 
+- **성과:** Pure OOF AUC가 0.77376으로 상승하며 m7(0.77375)과 Exp 26(0.77364)의 기록을 모두 경신.
+
+### 3. 검증 성능 (Validation Results)
+- **로컬 검증 (Pure OOF AUC):** 0.77376
+- **메인 리더보드 (Public):** (단일 제출 없음)
+- **서브 리더보드 (Public/Private):** (단일 제출 없음)
+
+---
+
+## Experiment 41: Master Rank Ensemble (6:4)
+- **Date:** 2026-02-03
+- **Model:** Rank Ensemble (Exp 26: 0.6, Exp 40: 0.4)
+- **Status:** Completed (Lower than Exp 26)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** 정제된 Exp 40을 40% 비중으로 섞어 Exp 26의 성능을 추월한다.
+- **실행:** Exp 26과 Exp 40의 Rank 가중 평균 (6:4) 적용.
+
+### 2. 결과 분석 (Result Analysis)
+- **진단:** Exp 38(0.78261) 대비 점수는 상승했으나, 여전히 Exp 26의 SOTA 기록(Sub 0.78296)에는 미치지 못함. 
+- **인사이트:** Exp 40의 신호는 유효하지만, 40%의 비중은 Exp 26의 최적화된 가중치를 흐트러뜨림. 더 보수적인 비중(8:2 등)이 필요함.
+
+### 3. 검증 성능 (Validation Results)
+- **서브 리더보드 (Public):** 0.7826499834
+- **서브 리더보드 (Private):** 0.7801324444
+
+---
+
+## Experiment 42: Conservative Rank Ensemble (8:2)
+- **Date:** 2026-02-03
+- **Model:** Rank Ensemble (Exp 26: 0.8, Exp 40: 0.2)
+- **Status:** Completed (Very close to SOTA)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** Exp 41(6:4)의 하락을 바탕으로, Exp 40의 비중을 20%로 줄여 Exp 26의 안정성을 보존하면서 PL의 엣지만 추출한다.
+- **실행:** Exp 26과 Exp 40의 Rank 가중 평균 (8:2) 적용.
+
+### 2. 결과 분석 (Result Analysis)
+- **진단:** 서브 LB 기준, Exp 26의 기록에 거의 근접함(Public 차이 0.00013 / Private 차이 0.000001). 
+- **인사이트:** 가중치를 줄일수록 점수가 우상향하는 추세가 뚜렷함. 이는 Exp 40이 고유한 정보를 담고 있으나 그 비중이 20%를 넘어가면 Public LB의 분포를 흔들 수 있음을 의미함.
+- **결정:** 메인 리더보드 제출 시에는 8.5:1.5 또는 9:1의 '극보수적 가중치'를 사용하여 최고점 경신을 노림.
+
+### 3. 검증 성능 (Validation Results)
+- **서브 리더보드 (Public):** 0.7828269912
+- **서브 리더보드 (Private):** 0.7802140570
+
+---
+
+## Experiment 43: Refined Master Ensemble (8.5:1.5)
+- **Date:** 2026-02-03
+- **Model:** Rank Ensemble (Exp 26: 0.85, Exp 40: 0.15)
+- **Status:** Completed (Extremely close to SOTA)
+
+### 1. 시도 내용 (Intended Strategy)
+- **가설:** Exp 42(8:2)의 상승세를 바탕으로 가중치를 8.5:1.5로 더 보수적으로 조정하면, Exp 26의 안정성을 지키면서 Exp 40의 엣지가 최고점을 경신할 것이다.
+- **실행:** Exp 26과 Exp 40의 Rank 가중 평균 (8.5:1.5) 적용.
+
+### 2. 결과 분석 (Result Analysis)
+- **진단:** 메인 LB 기준 0.781488 기록. SOTA(0.781510)와 단 0.000022 차이로 근접함.
+- **인사이트:** 가중치를 줄일수록 SOTA에 수렴하는 속도가 빨라짐. 이는 Exp 40의 신호가 매우 날카롭지만, 동시에 Exp 26이 가진 데이터 분포의 정교함이 그만큼 강력함을 의미함.
+- **결정:** 마지막 기회는 더 극단적인 보수적 가중치(9:1)를 적용하여 안전하게 최고점을 탈환함.
+
+### 3. 검증 성능 (Validation Results)
+- **메인 리더보드 (Public):** 0.7814885462
+- **비고:** SOTA 대비 -0.000022 차이.
+
+---
+
+### Exp 43: Diversity Loss Check
+* **Date:** 2026-02-03
+* **Method:** Rank Ensemble (Exp 26 + Exp 40)
+* **Weights:** 0.85 : 0.15
+* **Rationale:** 기존 SOTA(Exp 26)에 5% Pseudo-labeling 모델(Exp 40)을 미세하게 섞어 점수 향상 시도.
+* **Result:**
+    * **LB Score:** 0.78148 (Drop from 0.78151)
+* **Analysis:** 9:1에 가까운 방어적 비율임에도 점수 하락. m7 계열의 비중이 과해지면서 m1과의 다양성 균형이 깨진 것으로 판단됨.
+
+---
+
+### Exp 44 (Skipped): 5:5 Jumper Strategy
+* **Date:** 2026-02-03
+* **Method:** Rank Ensemble (m1 + Exp 40)
+* **Weights:** 0.5 : 0.5
+* **Rationale:** m7을 성능이 더 높은 Exp 40으로 완전히 교체하여 시너지 극대화 노림.
+* **Local AUC Check:** 0.77362 (Lower than Exp 26's 0.77364)
+* **Result:** **Not Submitted**
+* **Analysis:** 로컬 시뮬레이션 결과, Exp 40의 Pseudo-labeling이 m1의 일반화 성능을 오염시키는 '마이너스 시너지' 확인. 제출 전 폐기.
+
+---
+
+### Exp 44 (Final): Grand Trinity
+* **Date:** 2026-02-03
+* **Method:** 3-Way Rank Ensemble (m1 + m2 + m7) with Double-Rank Scale Restoration
+* **Weights:** 0.3(m1) : 0.3(m2) : 0.4(m7)
+* **Rationale:** * 17번 노트북의 m2(AUC-based)를 재소환하여 m1(Loss-based)과 결합. 
+    * 25번 노트북 로직을 이용해 39행의 인덱스 불일치(45529 vs 45490)를 `reindex`로 해결.
+    * 앙상블 후 무너진 표준편차를 복구하기 위해 Double-Rank 기법 적용.
+* **Local AUC Check:** **0.77371** (Highest Local SOTA)
+* **Result:**
+    * **LB Score: 0.7700287945 (Massive Drop)**
+* **Critical Failure Analysis:** * **Index Alignment Failure:** Double-Rank 과정에서 최종 순위를 m1의 값 분포에 매핑할 때, 행(Row)과 ID의 정렬을 명시적으로 보장하지 못함. 
+    * **Data Shuffling:** 결과적으로 예측값들이 무작위로 뒤섞인 채 제출되어 성능이 'Random Guess' 수준으로 폭락함. 
+    * **Lesson:** 앙상블 기법이 복잡해질수록 데이터 정렬(Alignment) 무결성 검증이 모델 성능보다 수만 배 중요함을 확인.
+
+---
+
