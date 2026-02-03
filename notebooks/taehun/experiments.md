@@ -394,7 +394,7 @@ Best Single (m1): 0.782615 (Public) / 0.779909 (Private)
 ### Experiment 15: Diversity-Driven Ensemble (Focal-SNN)
 Date: 2026-02-sed + m4: Focal-SNN)
 File: 09_Diversity_Focal_S01
-Model: Ensemble (m1: Loss-baNN_Model.ipynb / Experimental_Blend_92_08.csv
+Model: Ensemble (m: Loss-baNN_Model.ipynb / Experimental_Blend_92_08.csv1
 Status: Success (New Public/Private SOTA)
 
 1. 시도 내용 (Intended Strategy)
@@ -933,3 +933,74 @@ Status: Completed (Simulation Only - Not Submitted)
 
 ---
 
+### Exp 45: Trinity Fixed (Index Aligned)
+* **Date:** 2026-02-04
+* **Method:** Rank Ensemble (m1 + m2 + m7)
+* **Weights:** 0.3 : 0.3 : 0.4
+* **Rationale:** Exp 44의 인덱스 정렬 오류를 수정하고, m7(Deep FE)의 성능을 믿고 비중을 40%로 설정.
+* **Results:**
+    * **Sub LB:** 0.78291 (Public) / 0.78028 (Private)
+    * **Main LB:** **0.78152 (Current SOTA)**
+* **Analysis:** 인덱스 정렬 후 점수가 정상화됨. m7의 높은 비중 덕분에 Public 점수는 좋았으나, m2 비중이 낮아 Private 방어력은 개선 여지가 있음.
+
+---
+
+### Exp 46: The Quartet (Diversity Attempt)
+* **Date:** 2026-02-04
+* **Method:** Rank Ensemble (m1 + m2 + m7 + m4)
+* **Weights:** 0.20 : 0.20 : 0.45 : 0.15
+* **Rationale:** SNN(m4)을 15% 섞어 다양성(Diversity)으로 0.782 돌파 시도.
+* **Results:**
+    * **Sub LB:** 0.78293 (Public ▲) / 0.78014 (Private ▼)
+* **Analysis:** Public 점수는 미세하게 올랐으나, Private 점수가 급락(-0.00014). m4(SNN)가 현재 데이터셋에서는 노이즈로 작용함을 확인. 다양성보다는 상위 모델(m1, m2, m7)의 최적 조합에 집중하기로 결정.
+
+---
+
+### Exp 47: Golden Trinity (Private Defense)
+* **Date:** 2026-02-04
+* **Method:** Rank Ensemble (m1 + m2 + m7) - "m2 Heavy"
+* **Weights:** **0.20 : 0.50 : 0.30**
+* **Rationale:** Exp 46 실패 후, Private 점수가 가장 높았던 m2(AUC Optimized)의 비중을 50%로 대폭 늘리고 과적합 의심 모델인 m7을 30%로 축소.
+* **Results:**
+    * **Sub LB:** 0.78285 (Public ▼) / **0.78032 (Private ▲ Best!)**
+* **Analysis:** 예상대로 Public 점수는 소폭 하락했으나, **Private 점수가 0.78032로 자체 최고 기록 경신.**
+    * "m2 비중 확대 = 일반화 성능 강화" 가설이 입증됨.
+    * 메인 리더보드 최종 순위권 진입을 위한 가장 확실한 카드로 판명됨.
+
+---
+
+### Exp 48: Optimized Trinity (Balanced Strategy)
+* **Date:** 2026-02-04
+* **Method:** Rank Ensemble (m1 + m2 + m7)
+* **Weights:** 0.3307 : 0.3297 : 0.3396
+* **Rationale:** 로컬 OOF 시뮬레이션(SLSQP)을 통해 도출한 수학적 최적 비율. Exp 45(Public SOTA)의 과적합 위험과 Exp 47(Private Defense)의 점수 하락 사이에서 최적의 균형(Global Optima)을 찾고자 함.
+* **Status:** **Skipped (Strategy Only)**
+* **Note:** 마지막 제출 기회를 더 공격적인 방식(Exp 50)에 사용하기 위해 실제 메인 리더보드 제출은 보류함.
+
+---
+
+### Exp 49: Non-Linear Ensemble Simulation (Local Experiment)
+* **Date:** 2026-02-04
+* **Method:** 다양한 평균 방식(Mean Methods)에 따른 로컬 OOF AUC 비교
+    1.  **Arithmetic Mean (산술 평균):** 일반적인 가중 평균.
+    2.  **Geometric Mean (기하 평균):** `Product(Preds) ^ (1/N)`. 의견 불일치 시 점수를 크게 깎음 (보수적).
+    3.  **Power Mean (제곱 평균):** `Sum(Preds^2)`. 확신하는 모델에 가중치 부여 (공격적).
+* **Local Results:**
+    * Arithmetic: 0.773604
+    * **Geometric: 0.773635 (Winner)**
+    * Power Mean: 0.773563
+* **Analysis:** 로컬 데이터에서는 기하 평균이 노이즈를 제거하여 성능이 가장 좋음을 확인. 이를 바탕으로 마지막 제출 전략 수립.
+
+---
+
+### Exp 50 (Final): Geometric Mean Shot
+* **Date:** 2026-02-04
+* **Method:** **Geometric Mean Ensemble** (m1, m2, m7)
+* **Weights:** 0.33 : 0.33 : 0.34 (Exp 48의 최적 비율 적용)
+* **Rationale:** 남은 기회 1회. 단순 선형 결합(Linear)으로는 3위(0.78174)와의 격차(0.00022)를 좁히기 어렵다고 판단. 로컬 시뮬레이션에서 성능이 입증된 '기하 평균'을 통해 비선형적인 점수 스파이크(Spike)를 노림.
+* **Main LB Result:** **0.78145** (Lower than Exp 45 & 47)
+* **Analysis:**
+    * **실패 원인:** 기하 평균의 특성(보수적 예측/Outlier 제거)이 실제 리더보드의 정답 분포와 맞지 않았음. 리더보드는 과감한 예측을 요구했으나, 기하 평균이 이를 '노이즈'로 판단하여 점수를 깎아먹은 것으로 추정됨.
+    * **Conclusion:** 비선형 앙상블의 리스크 확인. 최종적으로 선형 앙상블인 **Exp 45(Public Best)**와 **Exp 47(Private Best)**이 가장 강력한 솔루션임을 재확인하며 대회 마감.
+
+    
